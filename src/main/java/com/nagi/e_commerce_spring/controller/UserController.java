@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nagi.e_commerce_spring.model.Address;
 import com.nagi.e_commerce_spring.model.Users;
+import com.nagi.e_commerce_spring.model.enums.Role;
 import com.nagi.e_commerce_spring.repository.AddressRepository;
 import com.nagi.e_commerce_spring.repository.UserRepository;
 
@@ -30,11 +32,16 @@ public class UserController {
     AddressRepository addressRepository;
 
     @GetMapping("/profile/{userId}")
-    public ResponseEntity<Users> getProfileById(@PathVariable Long userId) {
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    public ResponseEntity<Users> getProfile(@PathVariable Long userId, Authentication authentication) {
+        String username = authentication.getName();
+        Users authUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ResponseEntity.ok(user);
+        if (!authUser.getId().equals(userId) && authUser.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Permission denied.");
+        }
+
+        return ResponseEntity.ok(authUser);
     }
 
     @PutMapping("/profile/{userId}")
@@ -97,8 +104,8 @@ public class UserController {
     }
 
     @PostMapping
-public ResponseEntity<Users> createUser(@RequestBody Users user) {
-    Users savedUser = userRepository.save(user); 
-    return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-}
+    public ResponseEntity<Users> createUser(@RequestBody Users user) {
+        Users savedUser = userRepository.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+    }
 }
