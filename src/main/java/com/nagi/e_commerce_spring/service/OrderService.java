@@ -1,15 +1,19 @@
 package com.nagi.e_commerce_spring.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nagi.e_commerce_spring.dto.cart.CartItemResponseDTO;
+import com.nagi.e_commerce_spring.dto.order.OrderRequestDTO;
+import com.nagi.e_commerce_spring.dto.order.OrderResponseDTO;
+import com.nagi.e_commerce_spring.model.CartItem;
 import com.nagi.e_commerce_spring.model.Order;
 import com.nagi.e_commerce_spring.model.Users;
 import com.nagi.e_commerce_spring.model.enums.OrderStatus;
 import com.nagi.e_commerce_spring.model.enums.Role;
-import com.nagi.e_commerce_spring.repository.AddressRepository;
 import com.nagi.e_commerce_spring.repository.CartItemRepository;
 import com.nagi.e_commerce_spring.repository.OrderRepository;
 import com.nagi.e_commerce_spring.repository.UserRepository;
@@ -26,21 +30,20 @@ public class OrderService {
     @Autowired
     private CartItemRepository cartItemRepository;
 
-    @Autowired
-    private AddressRepository addressRepository;
 
     // Create order from user's cart
 
-    public Order createOrder(Long userId, Long addressId) {
-        var user = userRepository.findById(userId)
+    public OrderResponseDTO createOrder(Long userId, OrderRequestDTO request) {
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        var address = addressRepository.findById(addressId)
-                .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));
+        // Busca todos os itens do carrinho do usuário e filtra pelos IDs enviados
+        List<CartItem> cartItems = cartItemRepository.findByUser_Id(userId).stream()
+                .filter(item -> request.getItemsCartIds().contains(item.getId()))
+                .toList();
 
-        var cartItems = cartItemRepository.findByUser_Id(userId);
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty, cannot create order.");
+            throw new RuntimeException("No cart items found for the given IDs.");
         }
 
         double totalPrice = cartItems.stream()
@@ -49,25 +52,38 @@ public class OrderService {
 
         Order order = Order.builder()
                 .user(user)
-                .addressId(address)
                 .status(OrderStatus.PENDING)
                 .totalPrice(totalPrice)
+                .createdIn(LocalDateTime.now())
                 .build();
 
         cartItemRepository.deleteAll(cartItems);
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        return toResponse(savedOrder, cartItems);
     }
 
     // List all orders for a user
-    public List<Order> listOrders(Long userId) {
-        return orderRepository.findByUser_IdOrderByCreatedInDesc(userId);
+    public List<OrderResponseDTO> listOrders(Long userId) {
+        List<Order> orders = orderRepository.findByUser_IdOrderByCreatedInDesc(userId);
+
+        return orders.stream()
+                .map(order -> {
+                    List<CartItem> items = cartItemRepository.findByUser_Id(userId);
+                    return toResponse(order, items);
+                })
+                .toList();
     }
 
     // Find order by ID
-    public Order getOrderById(Long orderId) {
-        return orderRepository.findById(orderId)
+    public OrderResponseDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        // Busca os cart items originais, não DTOs
+        List<CartItem> cartItems = cartItemRepository.findByUser_Id(order.getUser().getId());
+
+        return toResponse(order, cartItems);
     }
 
     // Update order status (admin)
@@ -83,5 +99,28 @@ public class OrderService {
         if (user.getRole() != requiredRole) {
             throw new RuntimeException("Permission denied.");
         }
+    }
+
+    private OrderResponseDTO toResponse(Order order, List<CartItem> cartItems) {
+        List<CartItemResponseDTO> itemsDTO = cartItems.stream()
+                .map(this::cartItemToResponse)
+                .toList();
+
+        return OrderResponseDTO.builder()
+                .id(order.getId())
+                .data(order.getCreatedIn())
+                .status(order.getStatus().name())
+                .items(itemsDTO)
+                .total(order.getTotalPrice())
+                .build();
+    }
+
+    private CartItemResponseDTO cartItemToResponse(CartItem item) {
+        return CartItemResponseDTO.builder()
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .quantity(item.getQuantity())
+                .price(item.getProduct().getPrice())
+                .build();
     }
 }

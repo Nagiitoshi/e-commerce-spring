@@ -19,7 +19,7 @@ import com.nagi.e_commerce_spring.service.CategoryService;
 @RequestMapping("/categories")
 public class CategoryController {
 
-        @Autowired
+    @Autowired
     private CategoryService categoryService;
 
     @GetMapping
@@ -41,5 +41,4 @@ public class CategoryController {
     public void deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
     }
-    
 }

@@ -5,7 +5,10 @@ import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nagi.e_commerce_spring.dto.user.UserRequestDTO;
+import com.nagi.e_commerce_spring.dto.user.UserResponseDTO;
 import com.nagi.e_commerce_spring.model.Users;
+import com.nagi.e_commerce_spring.model.enums.Role;
 import com.nagi.e_commerce_spring.repository.UserRepository;
 
 @Service
@@ -21,19 +24,20 @@ public class UserService {
     }
 
     // Register user
-    public Users createUser(Users user) {
-        Users newUser = Users.builder()
-                .email(user.getEmail())
-                .password(user.getPassword())
-                .username(user.getUsername())
-                .phoneNumber(user.getPhoneNumber())
-                .role(user.getRole())
+    public UserResponseDTO createUser(UserRequestDTO request) {
+        Users user = Users.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhoneNumber())
+                .password(request.getPassword()) // depois BCrypt
+                .role(Role.USER) // default role
                 .createdIn(LocalDateTime.now())
                 .build();
 
-        validateUserData(newUser);
+        validateUserData(user);
+        Users saved = userRepository.save(user);
 
-        return userRepository.save(newUser);
+        return toResponse(saved);
     }
 
     // Login user
@@ -47,16 +51,18 @@ public class UserService {
     }
 
     // Update profile
-    public Users updateProfile(Long id, Users userDetails) {
-        Users user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        user.setEmail(userDetails.getEmail());
-        user.setPassword(userDetails.getPassword());
-        user.setUsername(userDetails.getUsername());
-        user.setPhoneNumber(userDetails.getPhoneNumber());
-        user.setCreatedIn(LocalDateTime.now());
+    public UserResponseDTO updateProfile(Long userId, UserRequestDTO request) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return userRepository.save(user);
+        user.setUsername(request.getUsername());
+        user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(request.getPassword());
+        }
+
+        Users updated = userRepository.save(user);
+        return toResponse(updated);
     }
 
     // Delete user
@@ -75,4 +81,14 @@ public class UserService {
             throw new RuntimeException("Password must be at least 8 characters long.");
         }
     }
+
+    private UserResponseDTO toResponse(Users user) {
+        return new UserResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                user.getRole().name());
+    }
+
 }

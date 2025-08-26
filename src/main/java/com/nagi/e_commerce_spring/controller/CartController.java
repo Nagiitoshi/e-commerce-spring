@@ -8,11 +8,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nagi.e_commerce_spring.model.CartItem;
+import com.nagi.e_commerce_spring.dto.cart.CartItemRequestDTO;
+import com.nagi.e_commerce_spring.dto.cart.CartItemResponseDTO;
 import com.nagi.e_commerce_spring.service.CartService;
 
 @RestController
@@ -23,33 +25,29 @@ public class CartController {
     private CartService cartService;
 
     @GetMapping
-    public List<CartItem> listCartItems(@RequestParam Long userId) {
+    public List<CartItemResponseDTO> listCartItems(@RequestParam Long userId) {
         return cartService.listItems(userId);
     }
 
     @PostMapping("/items")
-    public CartItem addItemToCart(@RequestParam Long userId,
-            @RequestParam Long productId,
-            @RequestParam int quantity) {
-        return cartService.addItem(userId, productId, quantity);
+    public CartItemResponseDTO addItemToCart(@RequestParam Long userId,
+            @RequestBody CartItemRequestDTO request) {
+        return cartService.addItem(userId, request);
     }
 
     @PutMapping("/items/{id}")
-    public CartItem updateCartItem(@PathVariable Long id, @RequestParam int quantity) {
-        CartItem item = cartService.listItems(id).stream()
-                .filter(ci -> ci.getId().equals(id))
+    public CartItemResponseDTO updateCartItem(@PathVariable Long id,
+            @RequestBody CartItemRequestDTO request) {
+        var cartItem = cartService.listItems(request.getProductId()).stream()
+                .filter(ci -> ci.getProductId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Cart item not found with id: " + id));
-        item.setQuantity(quantity);
-        return cartService.addItem(item.getUser().getId(), item.getProduct().getId(), quantity);
+
+        return cartService.addItem(cartItem.getProductId(), request);
     }
 
     @DeleteMapping("/items/{id}")
     public void removeItemFromCart(@PathVariable Long id, @RequestParam Long userId) {
-        CartItem item = cartService.listItems(userId).stream()
-                .filter(ci -> ci.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Cart item not found with id: " + id));
-        cartService.removeItem(userId, item.getProduct().getId());
+        cartService.removeItem(userId, id);
     }
 }

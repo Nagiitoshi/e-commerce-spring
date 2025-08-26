@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nagi.e_commerce_spring.dto.cart.CartItemRequestDTO;
+import com.nagi.e_commerce_spring.dto.cart.CartItemResponseDTO;
 import com.nagi.e_commerce_spring.model.CartItem;
 import com.nagi.e_commerce_spring.model.Product;
 import com.nagi.e_commerce_spring.model.Users;
@@ -26,27 +28,29 @@ public class CartService {
     private UserRepository userRepository;
 
     // Add item to cart
-    public CartItem addItem(Long userId, Long productId, int quantity) {
+    public CartItemResponseDTO addItem(Long userId, CartItemRequestDTO request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found."));
-
-        validateStockBeforeAddingToCart(product, quantity);
 
         if (!product.isAvailable()) {
             throw new RuntimeException("Product is not available");
         }
 
+        validateStockBeforeAddingToCart(product, request.getQuantity());
+
         CartItem cartItem = CartItem.builder()
                 .user(user)
                 .product(product)
-                .quantity(quantity)
+                .quantity(request.getQuantity())
                 .addedIn(LocalDateTime.now())
                 .build();
 
-        return cartItemRepository.save(cartItem);
+        cartItemRepository.save(cartItem);
+
+        return cartItemToResponse(cartItem);
     }
 
     // Remove item from cart
@@ -55,8 +59,11 @@ public class CartService {
     }
 
     // List all items in user's cart
-    public List<CartItem> listItems(Long userId) {
-        return cartItemRepository.findByUser_Id(userId);
+    public List<CartItemResponseDTO> listItems(Long userId) {
+        return cartItemRepository.findByUser_Id(userId)
+                .stream()
+                .map(this::cartItemToResponse)
+                .toList();
     }
 
     // Clear the cart for a user
@@ -77,5 +84,14 @@ public class CartService {
         if (product.getQuantity() < quantity) {
             throw new RuntimeException("Not enough stock available.");
         }
+    }
+
+        private CartItemResponseDTO cartItemToResponse(CartItem item) {
+        return CartItemResponseDTO.builder()
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .quantity(item.getQuantity())
+                .price(item.getProduct().getPrice())
+                .build();
     }
 }
