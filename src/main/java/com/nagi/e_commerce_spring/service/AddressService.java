@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
 import com.nagi.e_commerce_spring.model.Address;
 import com.nagi.e_commerce_spring.repository.AddressRepository;
 
@@ -37,7 +38,7 @@ public class AddressService {
     // Update address
     public Address updateAddress(Long id, Address addressDetails) {
         Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Address not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found with id: " + id));
 
         address.setCep(addressDetails.getCep());
         address.setStreet(addressDetails.getStreet());
@@ -52,7 +53,7 @@ public class AddressService {
     // Delete address
     public void deleteAddress(Long id) {
         Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Address not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found with id: " + id));
         addressRepository.delete(address);
     }
 }

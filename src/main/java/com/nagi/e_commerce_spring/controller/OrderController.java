@@ -63,5 +63,4 @@ public class OrderController {
         orderService.validatePermissions(adminUser, Role.ADMIN); // validar permissão de admin
         return orderService.updateStatus(id, status);
     }
-
 }

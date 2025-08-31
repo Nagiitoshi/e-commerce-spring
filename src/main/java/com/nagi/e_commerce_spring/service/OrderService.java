@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import com.nagi.e_commerce_spring.dto.cart.CartItemResponseDTO;
 import com.nagi.e_commerce_spring.dto.order.OrderRequestDTO;
 import com.nagi.e_commerce_spring.dto.order.OrderResponseDTO;
+import com.nagi.e_commerce_spring.exception.BusinessException;
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
 import com.nagi.e_commerce_spring.model.CartItem;
 import com.nagi.e_commerce_spring.model.Order;
 import com.nagi.e_commerce_spring.model.Users;
@@ -35,7 +37,7 @@ public class OrderService {
 
     public OrderResponseDTO createOrder(Long userId, OrderRequestDTO request) {
         Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         // Busca todos os itens do carrinho do usuário e filtra pelos IDs enviados
         List<CartItem> cartItems = cartItemRepository.findByUser_Id(userId).stream()
@@ -43,7 +45,7 @@ public class OrderService {
                 .toList();
 
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("No cart items found for the given IDs.");
+            throw new BusinessException("No cart items found for the given IDs.");
         }
 
         double totalPrice = cartItems.stream()
@@ -78,7 +80,7 @@ public class OrderService {
     // Find order by ID
     public OrderResponseDTO getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         // Busca os cart items originais, não DTOs
         List<CartItem> cartItems = cartItemRepository.findByUser_Id(order.getUser().getId());
@@ -89,7 +91,7 @@ public class OrderService {
     // Update order status (admin)
     public Order updateStatus(Long orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         order.setStatus(newStatus);
         return orderRepository.save(order);
@@ -97,7 +99,7 @@ public class OrderService {
 
     public void validatePermissions(Users user, Role requiredRole) {
         if (user.getRole() != requiredRole) {
-            throw new RuntimeException("Permission denied.");
+            throw new BusinessException("Permission denied.");
         }
     }
 

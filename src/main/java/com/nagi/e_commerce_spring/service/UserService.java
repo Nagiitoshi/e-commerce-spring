@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import com.nagi.e_commerce_spring.dto.user.UserRequestDTO;
 import com.nagi.e_commerce_spring.dto.user.UserResponseDTO;
+import com.nagi.e_commerce_spring.exception.BusinessException;
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
+import com.nagi.e_commerce_spring.exception.ValidationException;
 import com.nagi.e_commerce_spring.model.Users;
 import com.nagi.e_commerce_spring.model.enums.Role;
 import com.nagi.e_commerce_spring.repository.UserRepository;
@@ -29,8 +32,8 @@ public class UserService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
-                .password(request.getPassword()) // depois BCrypt
-                .role(Role.USER) // default role
+                .password(request.getPassword()) 
+                .role(Role.USER) 
                 .createdIn(LocalDateTime.now())
                 .build();
 
@@ -43,9 +46,9 @@ public class UserService {
     // Login user
     public Users loginUser(String email, String password) {
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
         if (!user.getPassword().equals(password)) {
-            throw new RuntimeException("Invalid password for user: " + email);
+            throw new BusinessException("Invalid password for user: " + email);
         }
         return user;
     }
@@ -53,7 +56,7 @@ public class UserService {
     // Update profile
     public UserResponseDTO updateProfile(Long userId, UserRequestDTO request) {
         Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setUsername(request.getUsername());
         user.setPhoneNumber(request.getPhoneNumber());
@@ -68,17 +71,17 @@ public class UserService {
     // Delete user
     public void deleteUser(Long id) {
         Users user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         userRepository.delete(user);
     }
 
     private void validateUserData(Users user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already in use.");
+            throw new BusinessException("Email already in use.");
         }
 
         if (user.getPassword().length() < 8) {
-            throw new RuntimeException("Password must be at least 8 characters long.");
+            throw new ValidationException("Password must be at least 8 characters long.");
         }
     }
 

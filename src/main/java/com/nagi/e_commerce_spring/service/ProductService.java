@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import com.nagi.e_commerce_spring.dto.product.ProductRequestDTO;
 import com.nagi.e_commerce_spring.dto.product.ProductResponseDTO;
+import com.nagi.e_commerce_spring.exception.BusinessException;
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
+import com.nagi.e_commerce_spring.exception.ValidationException;
 import com.nagi.e_commerce_spring.model.Category;
 import com.nagi.e_commerce_spring.model.Product;
 import com.nagi.e_commerce_spring.repository.CategoryRepository;
@@ -84,10 +87,10 @@ public class ProductService {
     // Update
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO request) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -103,14 +106,14 @@ public class ProductService {
     // Delete product
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         productRepository.delete(product);
     }
 
     // Disable product (admin)
     public void deactivateProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         product.setAvailable(false);
         productRepository.save(product);
@@ -118,10 +121,10 @@ public class ProductService {
 
     public void checkStockOrFail(Long productId, int quantity) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
         if (product.getQuantity() < quantity) {
-            throw new IllegalArgumentException("Insufficient stock for the product: " + product.getName());
+            throw new BusinessException("Insufficient stock for the product: " + product.getName());
         }
     }
 
@@ -140,11 +143,11 @@ public class ProductService {
     }
 
     private void validatePriceAndQuantity(Product product) {
-        if (product.getPrice().doubleValue() <= 0) {
-            throw new RuntimeException("Price must be greater than zero.");
+        if (product.getPrice() <= 0) {
+            throw new ValidationException("Price must be greater than zero.");
         }
         if (product.getQuantity() < 0) {
-            throw new RuntimeException("Stock cannot be negative.");
+            throw new ValidationException("Stock cannot be negative.");
         }
     }
 }

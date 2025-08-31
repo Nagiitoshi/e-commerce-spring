@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nagi.e_commerce_spring.exception.BusinessException;
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
 import com.nagi.e_commerce_spring.model.Category;
 import com.nagi.e_commerce_spring.repository.CategoryRepository;
 
@@ -32,7 +34,7 @@ public class CategoryService {
     // Update existing category
     public Category updateCategory(Long id, Category categoryDetails) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
         category.setName(categoryDetails.getName());
         category.setDescription(categoryDetails.getDescription());
 
@@ -42,10 +44,10 @@ public class CategoryService {
     // Delete category (only if empty)
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
 
         if (!category.getProducts().isEmpty()) {
-            throw new RuntimeException("Unable to delete category with linked products!!");
+            throw new BusinessException("Unable to delete category with linked products!!");
         }
 
         categoryRepository.delete(category);

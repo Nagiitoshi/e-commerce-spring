@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import com.nagi.e_commerce_spring.dto.cart.CartItemRequestDTO;
 import com.nagi.e_commerce_spring.dto.cart.CartItemResponseDTO;
+import com.nagi.e_commerce_spring.exception.BusinessException;
+import com.nagi.e_commerce_spring.exception.ResourceNotFoundException;
 import com.nagi.e_commerce_spring.model.CartItem;
 import com.nagi.e_commerce_spring.model.Product;
 import com.nagi.e_commerce_spring.model.Users;
@@ -30,13 +32,13 @@ public class CartService {
     // Add item to cart
     public CartItemResponseDTO addItem(Long userId, CartItemRequestDTO request) {
         Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found."));
 
         if (!product.isAvailable()) {
-            throw new RuntimeException("Product is not available");
+            throw new BusinessException("Product is not available");
         }
 
         validateStockBeforeAddingToCart(product, request.getQuantity());
@@ -82,7 +84,7 @@ public class CartService {
 
     private void validateStockBeforeAddingToCart(Product product, int quantity) {
         if (product.getQuantity() < quantity) {
-            throw new RuntimeException("Not enough stock available.");
+            throw new BusinessException("Not enough stock available.");
         }
     }
 
