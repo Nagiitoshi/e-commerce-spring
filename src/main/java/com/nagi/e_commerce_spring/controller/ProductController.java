@@ -76,4 +76,22 @@ public class ProductController {
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<ProductResponseDTO>> searchProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Boolean available,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "ASC") String direction,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<ProductResponseDTO> result = productService.searchProducts(
+                keyword, categoryId, minPrice, maxPrice, available, sortBy, direction, page, size);
+
+        return ResponseEntity.ok(result);
+    }
 }

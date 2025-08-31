@@ -1,10 +1,13 @@
 package com.nagi.e_commerce_spring.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.nagi.e_commerce_spring.dto.product.ProductRequestDTO;
@@ -16,6 +19,8 @@ import com.nagi.e_commerce_spring.model.Category;
 import com.nagi.e_commerce_spring.model.Product;
 import com.nagi.e_commerce_spring.repository.CategoryRepository;
 import com.nagi.e_commerce_spring.repository.ProductRepository;
+
+import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class ProductService {
@@ -90,7 +95,8 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -137,8 +143,8 @@ public class ProductService {
                 .quantity(product.getQuantity())
                 .imageUrl(product.getImageUrl())
                 .available(product.isAvailable())
-                .categoryName(product.getCategory().getName())
                 .categoryId(product.getCategory().getId())
+                .categoryName(product.getCategory().getName())
                 .build();
     }
 
@@ -149,5 +155,53 @@ public class ProductService {
         if (product.getQuantity() < 0) {
             throw new ValidationException("Stock cannot be negative.");
         }
+    }
+
+    public Page<ProductResponseDTO> searchProducts(
+            String name,
+            Long categoryId,
+            Double minPrice,
+            Double maxPrice,
+            Boolean available,
+            String sortBy,
+            String sortDir,
+            int page,
+            int size) {
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.fromString(sortDir != null ? sortDir : "ASC"),
+                        sortBy != null ? sortBy : "name"));
+
+        final Category category = categoryId != null
+                ? categoryRepository.findById(categoryId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId))
+                : null;
+
+        Page<Product> products = productRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (name != null && !name.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+            }
+
+            if (category != null) {
+                predicates.add(cb.equal(root.get("category"), category));
+            }
+
+            if (minPrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+            }
+
+            if (maxPrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+            }
+
+            if (available != null) {
+                predicates.add(cb.equal(root.get("available"), available));
+            }
+
+            return cb.and(predicates.toArray(Predicate[]::new));
+        }, pageable);
+
+        return products.map(this::toResponse);
     }
 }
