@@ -27,12 +27,12 @@ public class UserService {
     }
 
     // Register user
-    public UserResponseDTO createUser(UserRequestDTO request) {
+    public UserResponseDTO createUser(Users user2) {
         Users user = Users.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .phoneNumber(request.getPhoneNumber())
-                .password(request.getPassword()) 
+                .username(user2.getUsername())
+                .email(user2.getEmail())
+                .phoneNumber(user2.getPhoneNumber())
+                .password(user2.getPassword()) 
                 .role(Role.USER) 
                 .createdIn(LocalDateTime.now())
                 .build();
