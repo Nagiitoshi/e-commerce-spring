@@ -6,7 +6,7 @@ API de e-commerce para gerenciamento de **usuários, produtos, categorias, pedid
 
 ## 🚀 Tecnologias
 
-- **Java 17**
+- **Java 21**
 - **Spring Boot** 3.x
 - **Spring Data JPA**
 - **PostgreSQL**
@@ -222,24 +222,6 @@ POST /auth/refresh
 
 ---
 
-## 🛠️ Estrutura do Projeto
-
-```
-src/
-├── main/java/com/ecommerce/
-│   ├── config/          # Configurações (Security, Swagger)
-│   ├── controller/      # Controllers REST
-│   ├── dto/            # Data Transfer Objects
-│   ├── exception/      # Exception Handlers
-│   ├── model/          # Entidades JPA
-│   ├── repository/     # Repositories JPA
-│   ├── security/       # JWT, UserDetails, Filters
-│   ├── service/        # Regras de negócio
-│   └── util/           # Utilitários
-└── test/               # Testes unitários e integração
-```
-
----
 
 ## 🚨 Status Codes
 
