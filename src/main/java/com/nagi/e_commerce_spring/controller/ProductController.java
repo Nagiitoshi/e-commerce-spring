@@ -22,6 +22,10 @@ import com.nagi.e_commerce_spring.model.Category;
 import com.nagi.e_commerce_spring.repository.CategoryRepository;
 import com.nagi.e_commerce_spring.service.ProductService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/products")
 public class ProductController {
@@ -32,6 +36,11 @@ public class ProductController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Operation(summary = "Listar produtos", description = "Retorna uma página de produtos com filtros opcionais por nome e categoria")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produtos retornados com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Categoria não encontrada")
+    })
     public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -46,23 +55,37 @@ public class ProductController {
                     .orElseThrow(() -> new RuntimeException("Category not found with id: " + categoryId));
         }
 
-        // 👇 agora o service já devolve Page<ProductResponseDTO>
         Page<ProductResponseDTO> products = productService.getAllProducts(name, category, pageable);
 
         return ResponseEntity.ok(products);
     }
 
+    @Operation(summary = "Obter produto por ID", description = "Retorna os detalhes de um produto pelo seu ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produto retornado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDTO> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
+    @Operation(summary = "Criar produto", description = "Cria um novo produto (Admin)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Produto criado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Categoria não encontrada")
+    })
     @PostMapping("/admin/products")
     public ResponseEntity<ProductResponseDTO> createProduct(@RequestBody ProductRequestDTO productRequest) {
         ProductResponseDTO response = productService.createProduct(productRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Atualizar produto", description = "Atualiza um produto existente pelo ID (Admin)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produto atualizado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Produto ou categoria não encontrada")
+    })
     @PutMapping("/admin/products/{id}")
     public ResponseEntity<ProductResponseDTO> updateProduct(
             @PathVariable Long id,
@@ -72,11 +95,20 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Deletar produto", description = "Remove um produto pelo ID (Admin)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Produto deletado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado")
+    })
     @DeleteMapping("/admin/products/{id}")
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }
 
+    @Operation(summary = "Buscar produtos", description = "Realiza busca avançada com filtros, ordenação e paginação")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso")
+    })
     @GetMapping("/search")
     public ResponseEntity<Page<ProductResponseDTO>> searchProducts(
             @RequestParam(required = false) String keyword,

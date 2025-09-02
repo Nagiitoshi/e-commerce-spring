@@ -25,6 +25,10 @@ import com.nagi.e_commerce_spring.repository.AddressRepository;
 import com.nagi.e_commerce_spring.repository.UserRepository;
 import com.nagi.e_commerce_spring.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -38,6 +42,12 @@ public class UserController {
         @Autowired
         private UserService userService;
 
+        @Operation(summary = "Obter perfil do usuário", description = "Retorna os dados do perfil do usuário autenticado ou do usuário especificado (admin)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Perfil retornado com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Permissão negada"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
         @GetMapping("/profile/{userId}")
         public ResponseEntity<UserResponseDTO> getProfile(@PathVariable Long userId, Authentication authentication) {
                 String username = authentication.getName();
@@ -58,6 +68,12 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        @Operation(summary = "Atualizar perfil do usuário", description = "Atualiza os dados do perfil do usuário autenticado ou do usuário especificado (admin)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Perfil atualizado com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Permissão negada"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
         @PutMapping("/profile/{userId}")
         public ResponseEntity<UserResponseDTO> updateProfile(
                         @PathVariable Long userId,
@@ -76,6 +92,11 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        @Operation(summary = "Listar endereços do usuário", description = "Retorna a lista de endereços do usuário")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Endereços retornados com sucesso"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
         @GetMapping("/{userId}/addresses")
         public ResponseEntity<List<AddressResponseDTO>> getAddress(@PathVariable Long userId) {
                 List<Address> addresses = addressRepository.findByUser_Id(userId);
@@ -87,6 +108,11 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        @Operation(summary = "Adicionar endereço ao usuário", description = "Adiciona um novo endereço ao usuário")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Endereço adicionado com sucesso"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
         @PostMapping("/{userId}/addresses")
         public ResponseEntity<AddressResponseDTO> addAddress(
                         @PathVariable Long userId,
@@ -109,6 +135,12 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        @Operation(summary = "Atualizar endereço do usuário", description = "Atualiza um endereço específico do usuário")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Endereço atualizado com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Permissão negada"),
+                        @ApiResponse(responseCode = "404", description = "Endereço não encontrado")
+        })
         @PutMapping("/{userId}/addresses/{addressId}")
         public ResponseEntity<AddressResponseDTO> updateAddress(
                         @PathVariable Long userId,
@@ -134,6 +166,12 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        @Operation(summary = "Deletar endereço do usuário", description = "Remove um endereço específico do usuário")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "204", description = "Endereço deletado com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Permissão negada"),
+                        @ApiResponse(responseCode = "404", description = "Endereço não encontrado")
+        })
         @DeleteMapping("/{userId}/addresses/{addressId}")
         public ResponseEntity<Void> deleteAddress(@PathVariable Long userId, @PathVariable Long addressId) {
                 Address address = addressRepository.findById(addressId)
